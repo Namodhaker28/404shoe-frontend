@@ -26,7 +26,7 @@ const Header = () => {
   const [authState, setAuthState] = useState();
 
   const contextData = useContext(UserContext)
-console.log("first page",contextData)
+// console.log("first page",contextData)
 
   // const controlNavbar = () => {
   //   if (window.scrollY > 200) {
