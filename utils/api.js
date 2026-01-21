@@ -4,36 +4,42 @@ import axios from "axios";
 
 // const at =Cookies.get("404Token")
 export const fetchDataFromApi = async (endpoint) => {
-  console.log("attt", Cookies.get("404Token"))
-  const options = {
-    method: "GET",
-    headers: {
-      // ccontentType: "application/json",
-      authorization: "Bearer "+Cookies.get("404Token"),
-    },
-  };
+  try {
+    const options = {
+      method: "GET",
+      headers: {
+        // ccontentType: "application/json",
+        authorization: "Bearer " + Cookies.get("404Token"),
+      },
+    };
 
-  const res = await axios(`${API_URL}${endpoint}`, options);
-  console.log("response", res);
-  return res?.data;
+    const res = await axios(`${API_URL}${endpoint}`, options);
+
+    return res?.data;
+  } catch (error) {
+    console.log("error", error);
+   
+  }
 };
 
 export const updateDataFromApi = async (endpoint, body) => {
-  const options = {
-    method: "PUT",
-    headers: {
-      contentType: "application/json",
-      authorization: "Bearer " + Cookies.get("404Token"),
-    },
-    data: body,
-  };
-
-  const res = await axios(`${API_URL}${endpoint}`, options);
-  return res?.data;
+  try {
+    const options = {
+      method: "PUT",
+      headers: {
+        contentType: "application/json",
+        authorization: "Bearer " + Cookies.get("404Token"),
+      },
+      data: body,
+    };
+    const res = await axios(`${API_URL}${endpoint}`, options);
+    return res?.data;
+  } catch (error) {
+   
+  }
 };
 
 export const addDataFromApi = async (endpoint, body) => {
-  // console.log("Cookies.get("404Token")",Cookies.get("404Token"))
   const options = {
     method: "POST",
     headers: {
@@ -47,12 +53,31 @@ export const addDataFromApi = async (endpoint, body) => {
     const res = await axios(`${API_URL}${endpoint}`, options);
     return res?.data;
   } catch (error) {
-    console.log(error?.response);
+   
     return error?.response?.data;
   }
+};
 
-
-
+/**
+ * Delete data from API
+ * @param {string} endpoint - API endpoint
+ * @returns {Promise} - Response data
+ */
+export const deleteDataFromApi = async (endpoint) => {
+  try {
+    const options = {
+      method: "DELETE",
+      headers: {
+        contentType: "application/json",
+        authorization: "Bearer " + Cookies.get("404Token"),
+      },
+    };
+    const res = await axios(`${API_URL}${endpoint}`, options);
+    return res?.data;
+  } catch (error) {
+    console.log("error", error);
+    return error?.response?.data;
+  }
 };
 
 // export const makePaymentRequest = async (endpoint, payload) => {

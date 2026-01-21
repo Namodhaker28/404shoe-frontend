@@ -23,13 +23,13 @@ const MenuMobile = ({
     categories,
 }) => {
     return (
-        <ul className="flex flex-col md:hidden font-bold absolute top-[50px] left-0 w-full h-[calc(100vh-50px)] bg-white border-t text-black">
+        <ul className="flex flex-col md:hidden font-bold absolute top-[50px] left-0 w-full h-[calc(100vh-50px)] bg-gray-900 border-t border-gray-700 text-white">
             {data.map((item) => {
                 return (
                     <React.Fragment key={item.id}>
                         {!!item?.subMenu ? (
                             <li
-                                className="cursor-pointer py-4 px-5 border-b flex flex-col relative"
+                                className="cursor-pointer py-4 px-5 border-b border-gray-700 flex flex-col relative hover:bg-gray-800 transition-colors"
                                 onClick={() => setShowCatMenu(!showCatMenu)}
                             >
                                 <div className="flex justify-between items-center">
@@ -38,7 +38,7 @@ const MenuMobile = ({
                                 </div>
 
                                 {showCatMenu && (
-                                    <ul className="bg-black/[0.05] -mx-5 mt-4 -mb-4">
+                                    <ul className="bg-gray-800 -mx-5 mt-4 -mb-4">
                                         {categories?.map(
                                             ({ attributes: c, id }) => {
                                                 return (
@@ -54,9 +54,9 @@ const MenuMobile = ({
                                                             );
                                                         }}
                                                     >
-                                                        <li className="py-4 px-8 border-t flex justify-between">
+                                                        <li className="py-4 px-8 border-t border-gray-700 flex justify-between hover:bg-gray-800 transition-colors">
                                                             {c.name}
-                                                            <span className="opacity-50 text-sm">
+                                                            <span className="opacity-50 text-sm text-gray-400">
                                                                 {`(${c.products.data.length})`}
                                                             </span>
                                                         </li>
@@ -68,7 +68,7 @@ const MenuMobile = ({
                                 )}
                             </li>
                         ) : (
-                            <li className="py-4 px-5 border-b">
+                            <li className="py-4 px-5 border-b border-gray-700 hover:bg-gray-800 transition-colors">
                                 <Link
                                     href={item?.url}
                                     onClick={() => setMobileMenu(false)}

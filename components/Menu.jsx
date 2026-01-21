@@ -19,27 +19,27 @@ const subMenuData = [
 const Menu = ({ showCatMenu, setShowCatMenu, categories }) => {
 
   return (
-    <ul className="hidden md:flex items-center gap-8 font-medium text-black">
+    <ul className="hidden md:flex items-center gap-8 font-medium text-white">
       {data.map((item) => {
         return (
           <React.Fragment key={item.id}>
             {!!item?.subMenu ? (
               <li
-                className="cursor-pointer flex items-center gap-2 relative"
+                className="cursor-pointer flex items-center gap-2 relative hover:text-cyan-400 transition-colors"
                 onMouseEnter={() => setShowCatMenu(true)}
                 onMouseLeave={() => setShowCatMenu(false)}>
                 {item.name}
                 <BsChevronDown size={14} />
 
                 {showCatMenu && (
-                  <ul className="bg-white absolute top-6 left-0 min-w-[250px] px-1 py-1 text-black shadow-lg">
+                  <ul className="bg-gray-800 border border-gray-700 absolute top-6 left-0 min-w-[250px] px-1 py-1 text-white shadow-xl rounded-lg">
                     {categories?.map((c,id) => {
                       return (
                         <Link
                           key={id}
                           href={`/?brand=${c?.title}`}
                           onClick={() => setShowCatMenu(false)}>
-                          <li  className="h-12 flex justify-between items-center px-3 hover:bg-black/[0.03] rounded-md">
+                          <li  className="h-12 flex justify-between items-center px-3 hover:bg-gray-700 rounded-md transition-colors">
                             {c?.title}
                           </li>
                         </Link>
@@ -49,7 +49,7 @@ const Menu = ({ showCatMenu, setShowCatMenu, categories }) => {
                 )}
               </li>
             ) : (
-              <li className="cursor-pointer">
+              <li className="cursor-pointer hover:text-cyan-400 transition-colors">
                 <Link href={item?.url}>{item.name}</Link>
               </li>
             )}

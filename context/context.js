@@ -7,6 +7,9 @@ const UserContext = createContext();
 export const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState();
 
+  /**
+   * Fetch current user data
+   */
   const getUser = async ()=>{
     try {
       const res = await fetchDataFromApi("me")
@@ -17,6 +20,9 @@ export const UserContextProvider = ({ children }) => {
     }
   }
 
+  /**
+   * Refresh authentication token
+   */
   const refresh = async ()=>{
     try {
       const res = await fetchDataFromApi("refresh")
@@ -27,6 +33,13 @@ export const UserContextProvider = ({ children }) => {
     }
   }
 
+  /**
+   * Refresh user data (useful after cart/wishlist updates)
+   */
+  const refreshUser = async () => {
+    await getUser();
+  }
+
   useEffect(() =>{
     getUser()
   },[])
@@ -34,6 +47,7 @@ export const UserContextProvider = ({ children }) => {
   const contextData = {
     user,
     setUser,
+    refreshUser, // Expose refresh function for real-time updates
   };
 
   return (

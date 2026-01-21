@@ -4,24 +4,24 @@ import Image from "next/image";
 
 const About = () => {
   return (
-    <div>
-      <section class="about-section">
-        <div class="container">
-          <div class="about-image">
+    <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 min-h-screen">
+      <section className="about-section">
+        <div className="container">
+          <div className="about-image">
             <Image src={namo} />
           </div>
 
-          <div class="info">
-            <h2>
-              <span>[</span>Namo Narayan Dhaker <span>]</span>
+          <div className="info">
+            <h2 className="text-white">
+              <span className="text-cyan-400">[</span>Namo Narayan Dhaker <span className="text-cyan-400">]</span>
             </h2>
-            <p class="about-text">
+            <p className="about-text text-gray-300">
               Frameworks provided the magic wand for handling complexity, and
               Agile methodologies orchestrated the symphony of development.
               Amidst late-night epiphanies. Hackathons sparked
               innovation, and ethical coding became a guiding principle.
             </p>
-            <p class="about-text">
+            <p className="about-text text-gray-300">
             Full-stack mastery brought together frontend finesse and backend logic, while databases became the pulse of creations.
             </p>
             <div class="social-media-icons">

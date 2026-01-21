@@ -1,16 +1,11 @@
-
-
 import React, { useContext, useEffect, useState } from "react";
 import { IoMdHeartEmpty, IoMdHeart } from "react-icons/io";
 import Wrapper from "@/components/Wrapper";
 import ProductDetailsCarousel from "@/components/ProductDetailsCarousel";
 import RelatedProducts from "@/components/RelatedProducts";
-import {
-  addDataFromApi,
-  fetchDataFromApi,
-  updateDataFromApi,
-} from "@/utils/api";
-import { getDiscountedPricePercentage } from "@/utils/helper";
+import LoginPrompt from "@/components/LoginPrompt";
+import { addDataFromApi, fetchDataFromApi, updateDataFromApi } from "@/utils/api";
+import { getDiscountedPricePercentage, parseAvailableSizes } from "@/utils/helper";
 import ReactMarkdown from "react-markdown";
 import { useSelector, useDispatch } from "react-redux";
 import { addToCart } from "@/store/cartSlice";
@@ -20,10 +15,18 @@ import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import UserContext from "@/context/context";
+import Cookies from "js-cookie";
 
+/**
+ * ProductDetails component displays detailed product information
+ */
 const ProductDetails = () => {
   const [selectedSize, setSelectedSize] = useState();
   const [showError, setShowError] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginPromptMessage, setLoginPromptMessage] = useState("");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
   const [producId, setProductId] = useState();
@@ -31,70 +34,142 @@ const ProductDetails = () => {
   const [addedToWishlist, setAddedToWishlist] = useState();
 
   const [count, setCount] = useState(1);
-  const contextData = useContext(UserContext)
+  const contextData = useContext(UserContext);
 
-  const sizes = [
-    {
-      size: 7,
-      enabled: true,
-    },
-    {
-      size: 8,
-      enabled: false,
-    },
-    {
-      size: 9,
-      enabled: true,
-    },
-    {
-      size: 10,
-      enabled: true,
-    },
-    {
-      size: 11,
-      enabled: true,
-    },
-    {
-      size: 12,
-      enabled: false,
-    },
-  ];
+  /**
+   * Check if user is logged in
+   */
+  const isLoggedIn = () => {
+    return !!Cookies.get("404Token") && !!contextData?.user;
+  };
+
+  // Get sizes from product data - support both sizes array and available_sizes string
+  const sizes = p?.sizes?.length > 0 
+    ? p.sizes 
+    : (p?.available_sizes ? parseAvailableSizes(p.available_sizes) : []);
 
   useEffect(() => {
-    console.log("router",router)
     if (router.query.id || router.query.slug) {
       fetchProduct();
     }
   }, [router.query]);
 
   const fetchProduct = async () => {
-    const id = router.query.id  || router.query.slug;
+    const id = router.query.id || router.query.slug;
     setProductId(id);
     const res = await fetchDataFromApi(`product/${id}`);
     setP(res);
-    console.log("product res", res);
   };
 
+  /**
+   * Add or remove product from wishlist
+   */
   const addToWishlist = async () => {
-    const body = {
-      prodId: producId,
-    };
-    const res = await updateDataFromApi(`wishlist`, body);
-    contextData.setUser(res)
-    console.log("Res wishlist", res);
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      setLoginPromptMessage("Please login to add items to your wishlist");
+      setShowLoginPrompt(true);
+      return;
+    }
+
+    try {
+      setIsAddingToWishlist(true);
+      const body = {
+        prodId: producId,
+      };
+      const res = await updateDataFromApi(`wishlist`, body);
+      
+      // Update user context with latest data
+      if (res) {
+        contextData.setUser(res);
+        // Refresh user data to get latest wishlist info
+        if (contextData.refreshUser) {
+          await contextData.refreshUser();
+        }
+        // Show success message
+        const isInWishlist = res.wishlist?.includes(producId);
+        toast.success(
+          isInWishlist ? "Added to wishlist!" : "Removed from wishlist!",
+          {
+            position: "bottom-right",
+            autoClose: 2000,
+            theme: "dark",
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
+      toast.error("Failed to update wishlist. Please try again.", {
+        position: "bottom-right",
+        autoClose: 3000,
+        theme: "dark",
+      });
+    } finally {
+      setIsAddingToWishlist(false);
+    }
   };
 
+  /**
+   * Add product to cart
+   */
   const addToCart = async () => {
-    const body = {
-      product: producId,
-      count: count,
-      color: "red",
-      size: selectedSize,
-    };
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      setLoginPromptMessage("Please login to add items to your cart");
+      setShowLoginPrompt(true);
+      return;
+    }
 
-    const res = await addDataFromApi(`cart`, body);
-    console.log("Res Cart", res);
-    if (!(res.status == "fail")) notify();
+    // Validate size selection
+    if (!selectedSize) {
+      setShowError(true);
+      document.getElementById("sizesGrid")?.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    try {
+      setIsAddingToCart(true);
+      const body = {
+        product: producId,
+        count: count,
+        color: p?.color?.[0] || "default",
+        size: selectedSize,
+      };
+
+      const res = await addDataFromApi(`cart`, body);
+      
+      // Update user context with latest data
+      if (res?.orderBy) {
+        contextData.setUser(res.orderBy);
+        // Refresh user data to get latest cart/wishlist info
+        if (contextData.refreshUser) {
+          await contextData.refreshUser();
+        }
+      }
+      
+      // Show success notification
+      if (res?.status !== "fail") {
+        notify();
+      } else {
+        toast.error(res?.message || "Failed to add to cart", {
+          position: "bottom-right",
+          autoClose: 3000,
+          theme: "dark",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("Failed to add to cart. Please try again.", {
+        position: "bottom-right",
+        autoClose: 3000,
+        theme: "dark",
+      });
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   const notify = () => {
@@ -111,8 +186,13 @@ const ProductDetails = () => {
   };
 
   return (
-    <div className="w-full md:py-20">
+    <div className="w-full md:py-20 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 min-h-screen">
       <ToastContainer />
+      <LoginPrompt 
+        isOpen={showLoginPrompt} 
+        onClose={() => setShowLoginPrompt(false)}
+        message={loginPromptMessage}
+      />
       <Wrapper>
         <div className="flex flex-col lg:flex-row md:px-10 gap-[50px] lg:gap-[100px]">
           {/* left column start */}
@@ -124,52 +204,59 @@ const ProductDetails = () => {
           {/* right column start */}
           <div className="flex-[1] py-3">
             {/* PRODUCT TITLE */}
-            <div className="text-[34px] font-semibold mb-2 leading-tight">
-              <Image
-                width={500}
-                height={500}
-                src={p?.images?.[0]?.url}
-                alt={p?.title}
-              />
-            </div>
-            <div className="text-[34px] font-semibold mb-2 leading-tight">
-              {p?.title}
-            </div>
+            <div className="text-[34px] font-semibold mb-2 leading-tight text-white">{p?.title || p?.name}</div>
 
             {/* PRODUCT SUBTITLE */}
-            <div className="text-lg font-semibold mb-5">{p?.description}</div>
+            {p?.sub_title && (
+              <div className="text-lg font-semibold mb-2 text-gray-300">{p?.sub_title}</div>
+            )}
+            
+            {/* BRAND */}
+            {p?.brand && (
+              <div className="text-md font-medium mb-2 text-cyan-400">{p?.brand}</div>
+            )}
+
+            {/* RATING */}
+            {p?.avg_rating && (
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-yellow-400 text-xl">★</span>
+                <span className="text-lg font-semibold text-white">{p.avg_rating}</span>
+                {p?.review_count && (
+                  <span className="text-sm text-gray-400">({p.review_count} reviews)</span>
+                )}
+              </div>
+            )}
 
             {/* PRODUCT PRICE */}
-            <div className="flex items-center">
-              <p className="mr-2 text-lg font-semibold">
-                MRP : &#8377;{p?.price}
+            <div className="flex items-center flex-wrap gap-2 mb-4">
+              <p className="mr-2 text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Price: {p?.priceUSDT || p?.price || 0} {p?.currency || 'USDT'}
               </p>
-              {p?.original_price && (
-                <>
-                  <p className="text-base  font-medium line-through">
-                    &#8377;{p?.original_price}
-                  </p>
-                  <p className="ml-auto text-base font-medium text-green-500">
-                    {getDiscountedPricePercentage(p.original_price, p.price)}%
-                    off
-                  </p>
-                </>
+              {p?.price && p?.priceUSDT && p.price !== p.priceUSDT && (
+                <p className="text-base font-medium text-gray-400">
+                  ({p?.currency === 'USD' ? '$' : '₹'}{p?.price})
+                </p>
               )}
             </div>
+            
+            {/* AVAILABILITY */}
+            {p?.availability && (
+              <div className={`text-sm font-medium mb-2 ${p.availability === 'InStock' ? 'text-green-400' : 'text-red-400'}`}>
+                {p.availability === 'InStock' ? '✓ In Stock' : '✗ Out of Stock'}
+              </div>
+            )}
 
-            <div className="text-md font-medium text-black/[0.5]">
-              incl. of taxes
-            </div>
-            <div className="text-md font-medium text-black/[0.5] mb-20">
-              {`(Also includes all applicable duties)`}
+            <div className="text-md font-medium text-gray-400 mb-2">incl. of taxes</div>
+            <div className="text-md font-medium text-gray-400 mb-20">
+              (Also includes all applicable duties)
             </div>
 
             {/* PRODUCT SIZE RANGE START */}
             <div className="mb-10">
               {/* HEADING START */}
               <div className="flex justify-between mb-2">
-                <div className="text-md font-semibold">Select Size</div>
-                <div className="text-md font-medium text-black/[0.5] cursor-pointer">
+                <div className="text-md font-semibold text-white">Select Size</div>
+                <div className="text-md font-medium text-gray-400 cursor-pointer hover:text-gray-300">
                   Select Guide
                 </div>
               </div>
@@ -177,73 +264,125 @@ const ProductDetails = () => {
 
               {/* SIZE START */}
               <div id="sizesGrid" className="grid grid-cols-3 gap-2">
-                {sizes?.map((item, i) => (
-                  <div
-                    onClick={() => {
-                      console.log("item", item);
-                      setSelectedSize(item.size);
-                      setShowError(false);
-                    }}
-                    key={i}
-                    className={`border rounded-md text-center py-3 font-medium ${
-                      item.enabled
-                        ? "hover:border-black cursor-pointer"
-                        : "cursor-not-allowed bg-black/[0.1] opacity-50"
-                    } ${selectedSize === item.size ? "border-black" : ""}`}>
-                    {item.size}
-                  </div>
-                ))}
+                {sizes?.length > 0 ? (
+                  sizes.map((item, i) => {
+                    const isAvailable = item.stock > 0;
+                    return (
+                      <div
+                        onClick={() => {
+                          if (isAvailable) {
+                            setSelectedSize(item.size);
+                            setShowError(false);
+                          }
+                        }}
+                        key={`size-${item.size}-${i}`}
+                        className={`border rounded-md text-center py-3 font-medium transition-all ${
+                          isAvailable
+                            ? "hover:border-cyan-500 cursor-pointer border-gray-600 text-white"
+                            : "cursor-not-allowed bg-gray-800 opacity-50 border-gray-700 text-gray-500"
+                        } ${selectedSize === item.size ? "border-cyan-500 bg-cyan-500/10" : ""}`}
+                        title={isAvailable ? `${item.stock} in stock` : "Out of stock"}
+                      >
+                        <div>{item.size}</div>
+                        {isAvailable && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.stock} left
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-gray-500">No sizes available</div>
+                )}
               </div>
               {/* SIZE END */}
 
               {/* SHOW ERROR START */}
-              {showError && (
-                <div className="text-red-600 mt-1">
-                  Size selection is required
-                </div>
-              )}
+              {showError && <div className="text-red-400 mt-1 font-medium">Size selection is required</div>}
               {/* SHOW ERROR END */}
             </div>
             {/* PRODUCT SIZE RANGE END */}
 
             {/* ADD TO CART BUTTON START */}
             <button
-              className="w-full py-4 rounded-full bg-black text-white text-lg font-medium transition-transform active:scale-95 mb-3 hover:opacity-75"
-              onClick={() => {
-                if (!selectedSize) {
-                  setShowError(true);
-                  document.getElementById("sizesGrid").scrollIntoView({
-                    block: "center",
-                    behavior: "smooth",
-                  });
-                } else {
-                  addToCart();
-                }
-              }}>
-              Add to Cart
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 text-white text-lg font-semibold transition-all duration-300 transform hover:scale-105 mb-3 hover:shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              onClick={addToCart}
+              disabled={isAddingToCart}>
+              {isAddingToCart ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                  Adding...
+                </span>
+              ) : (
+                "Add to Cart"
+              )}
             </button>
             {/* ADD TO CART BUTTON END */}
 
             {/* WHISHLIST BUTTON START */}
             <button
               onClick={addToWishlist}
-              className="w-full py-4 rounded-full border border-black text-lg font-medium transition-transform active:scale-95 flex items-center justify-center gap-2 hover:opacity-75 mb-10">
-              Whishlist
-
-              {contextData?.user?.wishlist.includes(producId) ? (
-                <IoMdHeart size={20} color="red" />
+              disabled={isAddingToWishlist}
+              className="w-full py-4 rounded-xl border border-gray-600 text-white text-lg font-medium transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 hover:border-cyan-500 hover:bg-gray-800 mb-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+              {isAddingToWishlist ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  Updating...
+                </span>
               ) : (
-                <IoMdHeartEmpty size={20} />
+                <>
+                  Wishlist
+                  {contextData?.user?.wishlist?.includes(producId) ? (
+                    <IoMdHeart size={20} className="text-red-500" />
+                  ) : (
+                    <IoMdHeartEmpty size={20} />
+                  )}
+                </>
               )}
             </button>
             {/* WHISHLIST BUTTON END */}
 
-            <div>
-              <div className="text-lg font-bold mb-5">Product Details</div>
-              <div className="markdown text-md mb-5">
-                <ReactMarkdown>{p?.description}</ReactMarkdown>
+            {/* PRODUCT DESCRIPTION */}
+            {(p?.description || p?.raw_description) && (
+              <div>
+                <div className="text-lg font-bold mb-5 text-white">Product Details</div>
+                {p?.raw_description ? (
+                  <div 
+                    className="text-md mb-5 text-gray-300 prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: p.raw_description }}
+                  />
+                ) : (
+                  <div className="markdown text-md mb-5 text-gray-300">
+                    <ReactMarkdown>{p?.description}</ReactMarkdown>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+            
+            {/* COLOR OPTIONS */}
+            {p?.color && Array.isArray(p.color) && p.color.length > 0 && (
+              <div className="mt-5">
+                <div className="text-md font-semibold mb-2 text-white">Available Colors</div>
+                <div className="flex flex-wrap gap-2">
+                  {p.color.map((color, index) => (
+                    <span 
+                      key={`color-${index}`}
+                      className="px-3 py-1 bg-gray-700 rounded-md text-sm text-gray-300"
+                    >
+                      {color}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* MODEL NUMBER */}
+            {p?.model && (
+              <div className="mt-5 text-sm text-gray-400">
+                Model: {p.model}
+              </div>
+            )}
           </div>
           {/* right column end */}
         </div>

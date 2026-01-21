@@ -8,7 +8,8 @@
     font-size: 16px;
     line-height: 24px;
 
-    color: rgba(0, 0, 0, 1);
+    color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(to bottom, #111827, #1f2937, #111827);
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -30,6 +31,36 @@ img{
 
   body, html {
     font-family: Nunito, sans-serif;
+    background: linear-gradient(to bottom, #111827, #1f2937, #111827);
+    min-height: 100vh;
+  }
+
+  /* Web3 gradient text animation */
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #a855f7, #3b82f6, #06b6d4);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Glow effect for crypto elements */
+  .crypto-glow {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 40px rgba(59, 130, 246, 0.2);
+  }
+
+  .crypto-glow:hover {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), 0 0 60px rgba(59, 130, 246, 0.3);
   }
 
 /* PRODUCT DETAILS CAROUSEL STYLING CUSTOMIZATION START */

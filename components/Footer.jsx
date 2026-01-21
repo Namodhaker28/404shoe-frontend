@@ -5,7 +5,7 @@ import Wrapper from "./Wrapper";
 
 const Footer = () => {
   return (
-    <footer className="bg-black text-white pt-14 pb-3">
+    <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-t border-gray-700 text-white pt-14 pb-3">
       <Wrapper className="flex justify-between flex-col md:flex-row gap-[50px] md:gap-0">
         {/* LEFT START */}
 
@@ -20,22 +20,22 @@ const Footer = () => {
                 "_blank"
               )
             }
-            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-black hover:bg-white/[0.5] cursor-pointer">
+            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-white hover:bg-white/[0.5] cursor-pointer transition-colors">
             <FaFacebookF size={20} />
           </div>
           <Link
             href="https://twitter.com/NamoDhaker28"
-            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-black hover:bg-white/[0.5] cursor-pointer">
+            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-white hover:bg-white/[0.5] cursor-pointer transition-colors">
             <FaTwitter size={20} />
           </Link>
-          <div className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-black hover:bg-white/[0.5] cursor-pointer">
+          <div className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-white hover:bg-white/[0.5] cursor-pointer transition-colors">
             <FaYoutube size={20} />
           </div>
           <div
             onClick={() =>
               window.open("https://www.instagram.com/_underrated_30/", "_blank")
             }
-            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-black hover:bg-white/[0.5] cursor-pointer">
+            className="w-10 h-10 rounded-full bg-white/[0.25] flex items-center justify-center text-white hover:bg-white/[0.5] cursor-pointer transition-colors">
             <FaInstagram size={20} />
           </div>
         </div>
